@@ -33,6 +33,18 @@ python manage.py migrate
 python manage.py collectstatic
 ```
 ## 5. Настройка Gunicorn
+Добавим виртуальное окружение:
+```
+source /home/maxim/venv/bin/activate
+```
+```
+python3 -m venv /home/maxim/venv
+source /home/maxim/venv/bin/activate
+```
+```
+pip install django gunicorn
+```
+
 Создайте файл /etc/systemd/system/gunicorn.service:
 ```
 [Unit]
@@ -57,28 +69,29 @@ sudo systemctl start gunicorn
 sudo systemctl status gunicorn
 ```
 ## 6. Настройка Nginx
-Создайте файл /etc/nginx/sites-available/geo:
+Создайте файл /etc/nginx/sites-available/geo_project:
 ```
 server {
     listen 80;
     server_name _;
 
     location = /favicon.ico { access_log off; log_not_found off; }
-
+    
     location /static/ {
-        root /home/maxim/PycharmProjects/geo_project;
+        alias /home/maxim/PycharmProjects/geo_project/staticfiles;
     }
 
     location / {
         proxy_pass http://127.0.0.1:8001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 }
 ```
 Cвязываем файлы:
 ```
-sudo ln -s /etc/nginx/sites-available/geo /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/geo_project /etc/nginx/sites-enabled/
 ```
 Перезапуск nginx:
 ```
@@ -86,7 +99,13 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 ## 7. Готово
-test:
+Test:
 ```
 http://localhost
+```
+p.s.
+Остановить всё сразу:
+```
+sudo systemctl stop nginx
+sudo systemctl stop gunicorn
 ```
